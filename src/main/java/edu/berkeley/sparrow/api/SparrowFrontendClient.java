@@ -52,10 +52,10 @@ public class SparrowFrontendClient {
 
   /**
    * Initialize a connection to a sparrow scheduler.
-   * @param sparrowSchedulerAddr. The socket address of the Sparrow scheduler.
-   * @param app. The application id. Note that this must be consistent across frontends
+   * @param sparrowSchedulerAddr The socket address of the Sparrow scheduler.
+   * @param app The application id. Note that this must be consistent across frontends
    *             and backends.
-   * @param frontendServer. A class which implements the frontend server interface (for
+   * @param frontendServer A class which implements the frontend server interface (for
    *                        communication from Sparrow).
    * @throws IOException
    */
@@ -67,12 +67,12 @@ public class SparrowFrontendClient {
 
   /**
    * Initialize a connection to a sparrow scheduler.
-   * @param sparrowSchedulerAddr. The socket address of the Sparrow scheduler.
-   * @param app. The application id. Note that this must be consistent across frontends
+   * @param sparrowSchedulerAddr The socket address of the Sparrow scheduler.
+   * @param app The application id. Note that this must be consistent across frontends
    *             and backends.
-   * @param frontendServer. A class which implements the frontend server interface (for
+   * @param frontendServer A class which implements the frontend server interface (for
    *                        communication from Sparrow).
-   * @param listenPort. The port on which to listen for request from the scheduler.
+   * @param listenPort The port on which to listen for request from the scheduler.
    * @throws IOException
    */
   public void initialize(InetSocketAddress sparrowSchedulerAddr, String app,

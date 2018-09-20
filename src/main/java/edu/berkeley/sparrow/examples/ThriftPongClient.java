@@ -32,10 +32,47 @@ import edu.berkeley.sparrow.thrift.PongService.AsyncClient;
 import edu.berkeley.sparrow.thrift.PongService.AsyncClient.ping_call;
 
 public class ThriftPongClient {
+  /**
+   * Config.
+   */
+  private static boolean USE_SYNCHRONOUS_CLIENT = true;
+
+  /**
+   * Main
+   */
+  public static void main(String[] args) throws Exception {
+    String hostname = args[0];
+
+    if (USE_SYNCHRONOUS_CLIENT) {
+      pongUsingSynchronousClient(hostname); //Sync client example entrance
+    } else {
+      pongUsingAsynchronousClient(hostname); //Async client example entrance
+    }
+  }
+
+  /**
+   * Synch. client impl.
+   */
+  private static void pongUsingSynchronousClient(String hostname)
+          throws TException, InterruptedException {
+    TTransport tr = new TFramedTransport(new TSocket(hostname, 12345));
+    tr.open();
+    TProtocol proto = new TBinaryProtocol(tr);
+    PongService.Client client = new PongService.Client(proto);
+    while (true) {
+      Long t = System.nanoTime();
+      client.ping("PING from Sync. client");
+      System.out.println("Took: " + (System.nanoTime() - t) / (1000.0 * 1000.0) + "ms");
+      Thread.sleep(500);
+    }
+  }
+
+  /**
+   * Asynch. client impl.
+   */
   private static ThriftClientPool<PongService.AsyncClient> pongClientPool =
       new ThriftClientPool<PongService.AsyncClient>(
           new ThriftClientPool.PongServiceMakerFactory());
-  private static boolean USE_SYNCHRONOUS_CLIENT = true;
 
   private static class Callback implements AsyncMethodCallback<ping_call> {
     private InetSocketAddress address;
@@ -60,20 +97,6 @@ public class ThriftPongClient {
 
   }
 
-  private static void pongUsingSynchronousClient(String hostname)
-      throws TException, InterruptedException {
-    TTransport tr = new TFramedTransport(new TSocket(hostname, 12345));
-    tr.open();
-    TProtocol proto = new TBinaryProtocol(tr);
-    PongService.Client client = new PongService.Client(proto);
-    while (true) {
-      Long t = System.nanoTime();
-      client.ping("PING");
-      System.out.println("Took: " + (System.nanoTime() - t) / (1000.0 * 1000.0) + "ms");
-      Thread.sleep(500);
-    }
-  }
-
   private static void pongUsingAsynchronousClient(String hostname) throws Exception {
     InetSocketAddress address = new InetSocketAddress(hostname, 12345);
     while (true) {
@@ -81,18 +104,10 @@ public class ThriftPongClient {
       AsyncClient client = pongClientPool.borrowClient(address);
       System.out.println("Getting client took " + ((System.nanoTime() - t) / (1000 * 1000)) +
                          "ms");
-      client.ping("PING", new Callback(address, System.nanoTime()));
+      client.ping("PING from Async client", new Callback(address, System.nanoTime()));
       Thread.sleep(30);
     }
   }
 
-  public static void main(String[] args) throws Exception {
-    String hostname = args[0];
 
-    if (USE_SYNCHRONOUS_CLIENT) {
-      pongUsingSynchronousClient(hostname);
-    } else {
-      pongUsingAsynchronousClient(hostname);
-    }
-  }
 }
