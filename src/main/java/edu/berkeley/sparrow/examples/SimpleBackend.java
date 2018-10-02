@@ -141,7 +141,8 @@ public class SimpleBackend implements BackendService.Iface {
 		}
 
     try {
-      client.registerBackend(APP_ID, "localhost:" + listenPort);
+//      client.registerBackend(APP_ID, "localhost:" + listenPort);
+      client.registerBackend(APP_ID, nodeMonitorHost+":"+listenPort);
       LOG.debug("Client successfully registered");
     } catch (TException e) {
       LOG.debug("Error while registering backend: " + e.getMessage());
