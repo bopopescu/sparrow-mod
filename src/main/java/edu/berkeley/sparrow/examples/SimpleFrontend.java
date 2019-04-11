@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import com.sun.javafx.tools.packager.Log;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
 
@@ -154,9 +155,12 @@ public class SimpleFrontend implements FrontendService.Iface {
       long startTime = System.currentTimeMillis();
       LOG.debug("sleeping");
       while (System.currentTimeMillis() < startTime + experimentDurationS * 1000) {
-        Thread.sleep(100);
+        LOG.debug("Current servering time: " + System.currentTimeMillis() );
+        Thread.sleep(1000);
       }
       taskLauncher.shutdown();
+      LOG.debug("Experiment Completed!!");
+      client.close();
     }
     catch (Exception e) {
       LOG.error("Fatal exception", e);

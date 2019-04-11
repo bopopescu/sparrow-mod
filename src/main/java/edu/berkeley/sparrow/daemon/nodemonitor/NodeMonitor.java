@@ -128,6 +128,10 @@ public class NodeMonitor {
   public void tasksFinished(List<TFullTaskId> tasks) {
     LOG.debug(Logging.functionCall(tasks));
     scheduler.tasksFinished(tasks);
+
+    //Instrument Sparrow to simulating send taskComplete() back to scheduler
+    TFullTaskId task = tasks.get(0);
+    sendFrontendMessage(task.appId, task, 0, null);
   }
 
   public boolean enqueueTaskReservations(TEnqueueTaskReservationsRequest request) {
