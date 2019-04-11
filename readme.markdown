@@ -6,6 +6,9 @@ To read more about Sparrow, check out our [paper](http://dl.acm.org/citation.cfm
 
 If you're interested in using Sparrow, we recommend that you join the [Sparrow mailing list](https://groups.google.com/group/sparrow-scheduler-users).
 
+Modification
+-------------------------
+This repo has a modified version of [Sparrow]() project for experiments purpose. The original code has been extended to be able to read from trace file and record the request elapsed time from frontend.
 
 Code Layout
 -------------------------
