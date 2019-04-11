@@ -8,7 +8,7 @@ If you're interested in using Sparrow, we recommend that you join the [Sparrow m
 
 Modification
 -------------------------
-This repo has a modified version of [Sparrow]() project for experiments purpose. The original code has been extended to be able to read from trace file and record the request elapsed time from frontend.
+This repo has a modified version of [Sparrow](https://cs.stanford.edu/~matei/papers/2013/sosp_sparrow.pdf) project for experiments purpose. The original code has been extended to be able to read from trace file and record the request elapsed time from frontend.
 
 Code Layout
 -------------------------
