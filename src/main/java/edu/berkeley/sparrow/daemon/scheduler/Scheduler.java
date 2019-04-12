@@ -497,19 +497,24 @@ public class Scheduler {
         try {
             FrontendService.AsyncClient client = frontendClientPool.borrowClient(frontend);
 
-            if(record.allTasksCompleted()) { //If all tasks of the request completed, set status as 1 and pass the elapsed time to frontend output
-                ByteBuffer msg = ByteBuffer.allocate(8);
-                msg.putLong(record.elapsed());
-                /* Don't forget to reposition the pointer to the buffer back to write-begining */
-                msg.position(0);
+            synchronized (record) {
+                if(record.allTasksCompleted()) { //If all tasks of the request completed, set status as 1 and pass the elapsed time to frontend output
+                    ByteBuffer msg = ByteBuffer.allocate(8);
+                    msg.putLong(record.elapsed());
+                    /* Don't forget to reposition the pointer to the buffer back to write-begining */
+                    msg.position(0);
 
 //                LOG.debug("Buffer info: " + msg.limit() + " " + msg.capacity() + " " + msg.position());
 //                LOG.debug("Request: " + taskId.requestId + " completed at : " + record.elapsed());
-                client.frontendMessage(taskId, 1, msg,
-                        new sendFrontendMessageCallback(frontend, client));
-            } else {
-                client.frontendMessage(taskId, status, message,
-                        new sendFrontendMessageCallback(frontend, client));
+                    client.frontendMessage(taskId, 1, msg,
+                            new sendFrontendMessageCallback(frontend, client));
+
+                    //Remove the record
+                    records.remove(requestId);
+                } else {
+                    client.frontendMessage(taskId, status, message,
+                            new sendFrontendMessageCallback(frontend, client));
+                }
             }
 
         } catch (IOException e) {
@@ -546,7 +551,11 @@ public class Scheduler {
         }
 
         boolean allTasksCompleted() {
-            return (remainingTasks == 0);
+            if(remainingTasks == 0) {
+                remainingTasks = -1; //Reset the flag to avoid multiple access the critical section
+                return true;
+            } else
+            return false;
         }
 
         long elapsed() {
