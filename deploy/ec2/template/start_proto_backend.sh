@@ -1,7 +1,7 @@
 #!/bin/bash
 # Start Prototype backend
 
-LOG=/disk1/sparrow/protoBackend
+LOG=protoBackend.log
 
 APPCHK=$(ps aux | grep -v grep | grep -c ProtoBackend)
 
@@ -10,7 +10,7 @@ if [ ! $APPCHK = '0' ]; then
   exit 1;
 fi
 
-nohup java -cp ./sparrow/sparrow-1.0-SNAPSHOT.jar edu.berkeley.sparrow.examples.ProtoBackend  > $LOG 2>&1 &
+nohup java -cp sparrow-1.0-SNAPSHOT.jar edu.berkeley.sparrow.examples.SimpleBackend  > $LOG 2>&1 &
 PID=$!
 echo "Logging to $LOG"
 sleep 1

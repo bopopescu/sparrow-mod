@@ -94,7 +94,7 @@ public class SparrowFrontendClient {
     for (int i = 0; i < NUM_CLIENTS; i++) {
       Client client = TClients.createBlockingSchedulerClient(
           sparrowSchedulerAddr.getAddress().getHostAddress(), sparrowSchedulerAddr.getPort(),
-          60000);
+          300000); //Increasing this timeout to prevent Sparrow scheduler client socket time out when cluster size grows large (>100)
       clients.add(client);
     }
     clients.peek().registerFrontend(app, Network.getIPAddress(new PropertiesConfiguration())

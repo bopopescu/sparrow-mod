@@ -2,7 +2,7 @@
 # Start Sparrow locally
 ulimit -n 16384
 
-LOG=/disk1/sparrow/sparrowDaemon.log
+LOG=sparrowDaemon.log
 IP=`ifconfig eth0 | grep 'inet addr:' | cut -d: -f2 | awk '{ print $1}'`
 
 ip_there=`cat sparrow.conf |grep hostname`
@@ -22,7 +22,7 @@ fi
 
 # -XX:MaxGCPauseMillis=3 
 # removed nice -n -20
-nohup java -XX:+UseConcMarkSweepGC -verbose:gc -XX:+PrintGCTimeStamps -Xmx2046m -XX:+PrintGCDetails -cp ./sparrow/sparrow-1.0-SNAPSHOT.jar edu.berkeley.sparrow.daemon.SparrowDaemon -c sparrow.conf > $LOG 2>&1 &
+nohup java -XX:+UseConcMarkSweepGC -verbose:gc -XX:+PrintGCTimeStamps -Xmx2046m -XX:+PrintGCDetails -cp sparrow-1.0-SNAPSHOT.jar edu.berkeley.sparrow.daemon.SparrowDaemon -c sparrow.conf > $LOG 2>&1 &
 PID=$!
 echo "Logging to $LOG"
 sleep 1

@@ -15,6 +15,7 @@
 #
 
 import boto
+import boto3
 import os
 import sys
 import tempfile
@@ -27,73 +28,114 @@ from optparse import OptionParser
 
 
 def parse_args(force_action=True):
+  # parser = OptionParser(usage="sparrow-exp <action> <cluster> [options]" +
+  #   "\n\n<action> can be: launch, deploy, start-sparrow, stop-sparrow, start-proto, stop-proto, start-hdfs, stop-hdfs, start-sparrow-throughput, start-spark-shark, stop-spark, restart-spark-shark, command, collect-logs, destroy, login-fe, login-be, create-database, create-tpch-tables, start-shark-tpch")
+  # parser.add_option("-z", "--zone", default="us-east-1d",
+  #     help="Availability zone to launch instances in")
+  # parser.add_option("-a", "--ami", default="ami-533a733a",
+  #     help="Amazon Machine Image ID to use (use ami-7c9a0115 for HVM instance types)")
+  # parser.add_option("-t", "--instance-type", default="m2.2xlarge",
+  #     help="Type of instance to launch (default: m2.2xlarge). " +
+  #          "WARNING: must be 64 bit, thus small instances won't work")
+  # parser.add_option("-l", "--arrival-rate", type="float", default=1,
+  #     help = "Arrival rate of jobs in proto frontends (jobs/s)")
+  # parser.add_option("-k", "--key-pair",
+  #     help="Key pair to use on instances")
+  # parser.add_option("-i", "--identity-file",
+  #     help="SSH private key file to use for logging into instances")
+  # parser.add_option("-f", "--frontends", type="int", default=1,
+  #     help="Number of frontends to launch (default: 1)")
+  # parser.add_option("-b", "--backends", type="int", default=1,
+  #     help="Number of backends to launch (default: 1)")
+  # parser.add_option("-w", "--wait", type="int", default=0,
+  #     help="Number of seconds to wait for cluster nodes to boot (default: 0)")
+  # parser.add_option("-g", "--branch", default="master",
+  #     help="Which git branch to checkout")
+  # parser.add_option("-s", "--spark-branch", default="sparrow",
+  #     help="Which git branch to checkout (for spark)")
+  # parser.add_option("-d", "--log-dir", default="/tmp/",
+  #     help="Local directory into which log files are copied")
+  # parser.add_option("-n", "--tasks-per-job", type="int", default=1,
+  #     help="Number of tasks to launch for each job in prototype")
+  # parser.add_option("-x", "--num-preferred-nodes", type="int", default=0,
+  #     help="Number of preferred nodes to use in the prototype frontend (0 means unconstrained)")
+  # parser.add_option("-c", "--benchmark-id", type="int", default=1,
+  #     help="Which benchmark to run")
+  # parser.add_option("-e", "--benchmark-iterations", type="int", default=100,
+  #     help="Iterations of benchmark to run")
+  # parser.add_option("-p", "--sample-ratio", type="float", default=2,
+  #     help="Sample ratio for unconstrained tasks")
+  # parser.add_option("-q", "--sample-ratio-constrained", type=int, default=2,
+  #     help="Sample ratio for constrained tasks")
+  # parser.add_option("-y", "--kill-delay", type="int", default=1,
+  #     help="Time to wait between killing backends and frontends")
+  # parser.add_option("-v", "--inter-query-delay", type="int", default=100,
+  #     help="How many ms to wait between shark queries")
+  # parser.add_option("-m", "--scheduler", type="string", default="sparrow",
+  #     help="Which scheduler to use for running spark (mesos/sparrow)")
+  # parser.add_option("--spot-price", type="float", default=None,
+  #     help="If specified, launch slaves as spot instances with the given " +
+  #           "maximum price (in dollars). To see current spot prices, visit "
+  #           "http://aws.amazon.com/ec2/spot-instances/#7")
+  # parser.add_option("--cpus", type="int", default=1,
+  #     help="Number of cpus on the machine, used to determine how many concurrent tasks "
+  #          "to run")
+  # parser.add_option("--frontend-type", type="string", default="ProtoFrontend",
+  #     help="Classname (not fully qualified!) of the frontend to use")
+  # parser.add_option("-r", "--parallelism", type="int", default=8,
+  #     help="Level of parallelism for dummy queries.")
+  # parser.add_option("-u", "--num_partitions", type="int", default=1,
+  #     help="Number of partitions for shark tables.")
+  # parser.add_option("--reduce-tasks", type="int", default=5,
+  #     help="Number of reduce tasks to use for Shark queries.")
+  # parser.add_option("--spark-backend-mem", default="2g",
+  #     help="Amount of memory to give spark backends."),
+  # parser.add_option("--scale-factor", default="2.5",
+  #     help="Scale factor to use when creating TPCH database (used with create-database)")
+  # parser.add_option("--total-cores", default="200",
+  #     help="Total number of cores in the cluster (used to determine launch rate for "
+  #          "throughput experiments)")
+
   parser = OptionParser(usage="sparrow-exp <action> <cluster> [options]" +
-    "\n\n<action> can be: launch, deploy, start-sparrow, stop-sparrow, start-proto, stop-proto, start-hdfs, stop-hdfs, start-sparrow-throughput, start-spark-shark, stop-spark, restart-spark-shark, command, collect-logs, destroy, login-fe, login-be, create-database, create-tpch-tables, start-shark-tpch")
+                              "\n\n<action> can be: launch, deploy, start-sparrow, stop-sparrow, start-proto, stop-proto, command, collect-logs, destroy, login-fe, login-be")
   parser.add_option("-z", "--zone", default="us-east-1d",
-      help="Availability zone to launch instances in")
+                    help="Availability zone to launch instances in")
   parser.add_option("-a", "--ami", default="ami-533a733a",
-      help="Amazon Machine Image ID to use (use ami-894801e0 for HVM instance types)")
+                    help="Amazon Machine Image ID to use (use ami-7c9a0115 for HVM instance types)")
   parser.add_option("-t", "--instance-type", default="m2.2xlarge",
-      help="Type of instance to launch (default: m2.2xlarge). " +
-           "WARNING: must be 64 bit, thus small instances won't work")
-  parser.add_option("-l", "--arrival-rate", type="float", default=1,
-      help = "Arrival rate of jobs in proto frontends (jobs/s)")
+                    help="Type of instance to launch (default: m2.2xlarge). " +
+                         "WARNING: must be 64 bit, thus small instances won't work")
   parser.add_option("-k", "--key-pair",
-      help="Key pair to use on instances")
+                    help="Key pair to use on instances")
   parser.add_option("-i", "--identity-file",
-      help="SSH private key file to use for logging into instances")
+                    help="SSH private key file to use for logging into instances")
   parser.add_option("-f", "--frontends", type="int", default=1,
-      help="Number of frontends to launch (default: 1)")
+                    help="Number of frontends to launch (default: 1)")
   parser.add_option("-b", "--backends", type="int", default=1,
-      help="Number of backends to launch (default: 1)")
+                    help="Number of backends to launch (default: 1)")
   parser.add_option("-w", "--wait", type="int", default=0,
-      help="Number of seconds to wait for cluster nodes to boot (default: 0)")
+                    help="Number of seconds to wait for cluster nodes to boot (default: 0)")
   parser.add_option("-g", "--branch", default="master",
-      help="Which git branch to checkout")
-  parser.add_option("-s", "--spark-branch", default="sparrow",
-      help="Which git branch to checkout (for spark)")
+                    help="Which git branch to checkout")
   parser.add_option("-d", "--log-dir", default="/tmp/",
-      help="Local directory into which log files are copied")
-  parser.add_option("-n", "--tasks-per-job", type="int", default=1,
-      help="Number of tasks to launch for each job in prototype")
-  parser.add_option("-x", "--num-preferred-nodes", type="int", default=0,
-      help="Number of preferred nodes to use in the prototype frontend (0 means unconstrained)")
-  parser.add_option("-c", "--benchmark-id", type="int", default=1,
-      help="Which benchmark to run")
-  parser.add_option("-e", "--benchmark-iterations", type="int", default=100,
-      help="Iterations of benchmark to run")
+                    help="Local directory into which log files are copied")
   parser.add_option("-p", "--sample-ratio", type="float", default=2,
-      help="Sample ratio for unconstrained tasks")
-  parser.add_option("-q", "--sample-ratio-constrained", type=int, default=2,
-      help="Sample ratio for constrained tasks")
+                    help="Sample ratio for unconstrained tasks")
   parser.add_option("-y", "--kill-delay", type="int", default=1,
-      help="Time to wait between killing backends and frontends")
-  parser.add_option("-v", "--inter-query-delay", type="int", default=100,
-      help="How many ms to wait between shark queries")
-  parser.add_option("-m", "--scheduler", type="string", default="sparrow",
-      help="Which scheduler to use for running spark (mesos/sparrow)")
+                    help="Time to wait between killing backends and frontends")
   parser.add_option("--spot-price", type="float", default=None,
-      help="If specified, launch slaves as spot instances with the given " +
-            "maximum price (in dollars). To see current spot prices, visit "
-            "http://aws.amazon.com/ec2/spot-instances/#7")
+                    help="If specified, launch slaves as spot instances with the given " +
+                         "maximum price (in dollars). To see current spot prices, visit "
+                         "http://aws.amazon.com/ec2/spot-instances/#7")
   parser.add_option("--cpus", type="int", default=4,
-      help="Number of cpus on the machine, used to determine how many concurrent tasks "
-           "to run")
+                    help="Number of cpus on the machine, used to determine how many concurrent tasks "
+                         "to run")
   parser.add_option("--frontend-type", type="string", default="ProtoFrontend",
-      help="Classname (not fully qualified!) of the frontend to use")
-  parser.add_option("-r", "--parallelism", type="int", default=8,
-      help="Level of parallelism for dummy queries.")
-  parser.add_option("-u", "--num_partitions", type="int", default=1,
-      help="Number of partitions for shark tables.")
-  parser.add_option("--reduce-tasks", type="int", default=5,
-      help="Number of reduce tasks to use for Shark queries.")
-  parser.add_option("--spark-backend-mem", default="2g",
-      help="Amount of memory to give spark backends."),
-  parser.add_option("--scale-factor", default="2.5",
-      help="Scale factor to use when creating TPCH database (used with create-database)")
-  parser.add_option("--total-cores", default="200",
-      help="Total number of cores in the cluster (used to determine launch rate for "
-           "throughput experiments)")
+                    help="Classname (not fully qualified!) of the frontend to use")
+  parser.add_option("-l","--trace-file-path", default="~/data.tr",
+                    help="Trace file location")
+  parser.add_option("-n","--total-num-of-requests", type="int", default=0,
+                    help="Total number of requests in the trace file")
 
   (opts, args) = parser.parse_args()
   if len(args) < 2 and force_action:
@@ -293,17 +335,32 @@ def is_active(instance):
 
 def find_existing_cluster(conn, opts, cluster_name):
   print "Searching for existing Sparrow cluster..."
-  reservations = conn.get_all_instances()
-  frontend_nodes = []
-  backend_nodes = []
-  for res in reservations:
-    active = [i for i in res.instances if is_active(i)]
-    if len(active) > 0:
-      group_names = [g.name for g in res.groups]
-      if group_names == ["%s-frontends" % cluster_name]:
-        frontend_nodes += res.instances
-      elif group_names == ["%s-backends" % cluster_name]:
-        backend_nodes += res.instances
+  ## filters = dict()
+  ## filters.update({'availability-zone':'us-east-1d'})
+  # sgs   = conn.get_all_security_groups( filters = {'group-name':'sparrow-backends'})
+
+  sgs_frontends = conn.get_all_security_groups(filters={'group-name':"%s-frontends" % cluster_name})
+  sgs_backends = conn.get_all_security_groups(filters={'group-name':"%s-backends" % cluster_name})
+
+  frontend_nodes = sgs_frontends[0].instances()
+  backend_nodes = sgs_backends[0].instances()
+
+  # for sg in sgs:
+  #   for instance in sg.instances():
+  #       print sg.name,instance.id
+  ###!! BOTO2 get_all_instances() is broken for the purpose of getting security group of the instance doesn't work anymore
+  # reservations = conn.get_all_instances(filters={'availability-zone': 'us-east-1d'})
+  ## reservations = conn.get_all_instances(filters=filters)
+  # frontend_nodes = []
+  # backend_nodes = []
+  # for res in reservations:
+  #   active = [i for i in res.instances if is_active(i)]
+  #   if len(active) > 0:
+  #     group_names = [g.name for g in res.groups]
+  #     if group_names == ["%s-frontends" % cluster_name]:
+  #       frontend_nodes += res.instances
+  #     elif group_names == ["%s-backends" % cluster_name]:
+  #       backend_nodes += res.instances
   if frontend_nodes != [] and backend_nodes != []:
     print ("Found %d frontend and %s backend nodes" %
            (len(frontend_nodes), len(backend_nodes)))
@@ -327,47 +384,74 @@ def find_existing_cluster(conn, opts, cluster_name):
 
 Returns the name of the directory with all of the files that need to be deployed.
 """
-def generate_deploy_files(frontends, backends, opts, warmup_job_arrival_s, warmup_s, post_warmup_s,
+def generate_deploy_files(frontends, backends, opts,
                           nm_task_scheduler, users):
   # Replace template vars
   tmp_dir = tempfile.mkdtemp()
 
+  # Copy sparrow binaries to the tmp folder
+  from shutil import copy
+  copy('../../target/sparrow-1.0-SNAPSHOT.jar',tmp_dir)
+  # template_vars = {
+  #   "frontend_list": "\n".join(["%s" % i.public_dns_name \
+  #                                for i in frontends]), \
+  #   "sparrow_schedulers": "\n".join(["sparrow@%s:20503" % i.private_ip_address \
+  #                                     for i in frontends]), \
+  #   "static_backends": ",".join(["%s:20502" % i.public_dns_name \
+  #                                for i in backends]),
+  #   "name_node": frontends[0].public_dns_name,
+  #   "backend_list": "\n".join(["%s" % i.public_dns_name \
+  #                                for i in backends]),
+  #   "backend_comma_joined_list": ",".join(["%s" % i.public_dns_name \
+  #                                          for i in backends]),
+  #   "arrival_lambda": "%s" % opts.arrival_rate,
+  #   "git_branch": "%s" % opts.branch,
+  #   "spark_git_branch": "%s" % opts.spark_branch,
+  #   "benchmark_iterations": "%s" % opts.benchmark_iterations,
+  #   "benchmark_id": "%s" % opts.benchmark_id,
+  #   "tasks_per_job": "%s" % opts.tasks_per_job,
+  #   "num_preferred_nodes": "%s" % opts.num_preferred_nodes,
+  #   "sample_ratio": "%s" % opts.sample_ratio,
+  #   "sample_ratio_constrained": "%s" % opts.sample_ratio_constrained,
+  #   "warmup_job_arrival_rate_s": "%s" % warmup_job_arrival_s,
+  #   "warmup_s": "%s" % warmup_s,
+  #   "post_warmup_s": "%s" % post_warmup_s,
+  #   "node_monitor_task_scheduler": "%s" % nm_task_scheduler,
+  #   "num_partitions": "%s" % opts.num_partitions,
+  #   "reduce_tasks": "%s" % (opts.reduce_tasks),
+  #   "inter_query_delay": "%s" % opts.inter_query_delay,
+  #   "users": users,
+  #   "frontend_type": opts.frontend_type,
+  #   "cpus": "%s" % opts.cpus,
+  #   "total_cores": "%s" % opts.total_cores,
+  #   "spark_backend_mem": "%s" % opts.spark_backend_mem
+  # }
+
   template_vars = {
-    "frontend_list": "\n".join(["%s" % i.public_dns_name \
-                                 for i in frontends]), \
-    "sparrow_schedulers": "\n".join(["sparrow@%s:20503" % i.private_ip_address \
-                                      for i in frontends]), \
-    "static_backends": ",".join(["%s:20502" % i.public_dns_name \
+      "frontend_list": "\n".join(["%s" % i.public_dns_name \
+                                  for i in frontends]), \
+      "sparrow_schedulers": "\n".join(["sparrow@%s:20503" % i.private_ip_address \
+                                       for i in frontends]), \
+      "static_backends": ",".join(["%s:20502" % i.public_dns_name \
+                                   for i in backends]),
+      "name_node": frontends[0].public_dns_name,
+      "backend_list": "\n".join(["%s" % i.public_dns_name \
                                  for i in backends]),
-    "name_node": frontends[0].public_dns_name,
-    "backend_list": "\n".join(["%s" % i.public_dns_name \
-                                 for i in backends]),
-    "backend_comma_joined_list": ",".join(["%s" % i.public_dns_name \
-                                           for i in backends]),
-    "arrival_lambda": "%s" % opts.arrival_rate,
-    "git_branch": "%s" % opts.branch,
-    "spark_git_branch": "%s" % opts.spark_branch,
-    "benchmark_iterations": "%s" % opts.benchmark_iterations,
-    "benchmark_id": "%s" % opts.benchmark_id,
-    "tasks_per_job": "%s" % opts.tasks_per_job,
-    "num_preferred_nodes": "%s" % opts.num_preferred_nodes,
-    "sample_ratio": "%s" % opts.sample_ratio,
-    "sample_ratio_constrained": "%s" % opts.sample_ratio_constrained,
-    "warmup_job_arrival_rate_s": "%s" % warmup_job_arrival_s,
-    "warmup_s": "%s" % warmup_s,
-    "post_warmup_s": "%s" % post_warmup_s,
-    "node_monitor_task_scheduler": "%s" % nm_task_scheduler,
-    "num_partitions": "%s" % opts.num_partitions,
-    "reduce_tasks": "%s" % (opts.reduce_tasks),
-    "inter_query_delay": "%s" % opts.inter_query_delay,
-    "users": users,
-    "frontend_type": opts.frontend_type,
-    "cpus": "%s" % opts.cpus,
-    "total_cores": "%s" % opts.total_cores,
-    "spark_backend_mem": "%s" % opts.spark_backend_mem
+      "backend_comma_joined_list": ",".join(["%s" % i.public_dns_name \
+                                             for i in backends]),
+      "git_branch": "%s" % opts.branch,
+      "sample_ratio": "%s" % opts.sample_ratio,
+      "node_monitor_task_scheduler": "%s" % nm_task_scheduler,
+      "users": users,
+      "frontend_type": opts.frontend_type,
+      "cpus": "%s" % opts.cpus,
+      "trace_file_path": "%s" % opts.trace_file_path,
+      "total_num_of_requests": "%s" % opts.total_num_of_requests
   }
 
   for dirpath, dirnames, filenames in os.walk("template"):
+    if('sparrow' in dirnames):
+        dirnames.remove('sparrow') # donot visit sparrow binary
     rel_dir_path=dirpath.replace("template", "")
     if rel_dir_path.startswith(os.sep):
       rel_dir_path = rel_dir_path[1:]
@@ -386,28 +470,26 @@ def generate_deploy_files(frontends, backends, opts, warmup_job_arrival_s, warmu
   return tmp_dir
 
 # Deploy Sparrow configuration on a launched cluster (but don't rebuild).
-def redeploy_sparrow(machines, frontends, backends, opts, warmup_job_arrival_s=0, warmup_s=0,
-                     post_warmup_s=0, nm_task_scheduler="fifo",
-                     users="user0:1:0"):
-  # Replace template vars
-  tmp_dir = generate_deploy_files(frontends, backends, opts, warmup_job_arrival_s, warmup_s,
-                                  post_warmup_s, nm_task_scheduler, users)
-
-  for machine in machines:
-    print "Copying files to: %s ..." % machine.public_dns_name
-
-    # Rsync this to one machine
-    command = (("rsync -rv -e 'ssh -o StrictHostKeyChecking=no -i %s' " +
-        "'%s/' 'root@%s:~/'") % (opts.identity_file, tmp_dir, machine.public_dns_name))
-    subprocess.check_call(command, shell=True)
+# def redeploy_sparrow(machines, frontends, backends, opts, warmup_job_arrival_s=0, warmup_s=0,
+#                      post_warmup_s=0, nm_task_scheduler="fifo",
+#                      users="user0:1:0"):
+#   # Replace template vars
+#   tmp_dir = generate_deploy_files(frontends, backends, opts, warmup_job_arrival_s, warmup_s,
+#                                   post_warmup_s, nm_task_scheduler, users)
+#
+#   for machine in machines:
+#     print "Copying files to: %s ..." % machine.public_dns_name
+#
+#     # Rsync this to one machine
+#     command = (("rsync -rv -e 'ssh -o StrictHostKeyChecking=no -i %s' " +
+#         "'%s/' 'root@%s:~/'") % (opts.identity_file, tmp_dir, machine.public_dns_name))
+#     subprocess.check_call(command, shell=True)
 
 # Deploy Sparrow binaries and configuration on a launched cluster
-def deploy_cluster(frontends, backends, opts, warmup_job_arrival_s=0, warmup_s=0,
-                   post_warmup_s=0, nm_task_scheduler="fifo",
+def deploy_cluster(frontends, backends, opts, nm_task_scheduler="fifo",
                    users="user0:1:0"):
   # Replace template vars
-  tmp_dir = generate_deploy_files(frontends, backends, opts, warmup_job_arrival_s, warmup_s,
-                                  post_warmup_s, nm_task_scheduler, users)
+  tmp_dir = generate_deploy_files(frontends, backends, opts, nm_task_scheduler, users)
 
   driver_machine = frontends[0].public_dns_name
   print "Chose driver machine: %s ..." % driver_machine
@@ -423,12 +505,15 @@ def deploy_cluster(frontends, backends, opts, warmup_job_arrival_s=0, warmup_s=0
   ssh(driver_machine, opts, 'mkdir -p /root/.ssh')
   scp(driver_machine, opts, opts.identity_file, '/root/.ssh/id_rsa')
 
-  print "Building sparrow on driver machine..."
-  ssh(driver_machine, opts, "chmod 755 /root/*.sh;"
-                            "/root/build_sparrow.sh;")
+  # TODO: Original sparrow image on EC2 is outdated, git (and openSSH) needs to be updated to support latest git clone
+  # (Huiyang) fix this later (prepare Pigeon AMI to support latest git version)
+  # print "Building sparrow on driver machine..."
+  # ssh(driver_machine, opts, "chmod 755 /root/*.sh;"
+  #                           "/root/build_sparrow.sh;")
 
   print "Deploying sparrow to other machines..."
-  ssh(driver_machine, opts, "/root/deploy_sparrow.sh")
+  ssh(driver_machine, opts, "chmod 755 /root/*.sh;"
+                            "/root/deploy_sparrow.sh")
 
 def start_sparrow_throughput(frontends, backends, opts):
   start_sparrow(frontends, backends, opts)
@@ -611,8 +696,9 @@ def main():
   wait_for_instances(frontends)
   wait_for_instances(backends)
 
-  print "Waiting %d more seconds..." % opts.wait
-  time.sleep(opts.wait)
+  ##TODO: (Huiyang) Do we really need to wait another 100 seconds after instance existing "pending" status? Check in your expr.
+  # print "Waiting %d more seconds..." % opts.wait
+  # time.sleep(opts.wait)
 
   print "Executing action: %s" % action
 

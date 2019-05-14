@@ -118,7 +118,8 @@ public class SimpleBackend implements BackendService.Iface {
     public void initialize(int listenPort, String nodeMonitorHost, int nodeMonitorPort) {
         // Register server.
         try {
-            client = TClients.createBlockingNmClient(nodeMonitorHost, nodeMonitorPort);
+            //Timeout is set to 3s (3000 ms) to prevent connection refused when cluster size > 50
+            client = TClients.createBlockingNmClient(nodeMonitorHost, nodeMonitorPort, 3000);
         } catch (IOException e) {
             LOG.debug("Error creating Thrift client: " + e.getMessage());
         }

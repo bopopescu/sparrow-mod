@@ -12,25 +12,26 @@ This script automates the deployment of a Sparrow cluster on ec2. To use it:
 
    The basic workflow would is usually like this.
    # Launch instances
-   ./ec2-exp.sh launch -k eastkey -i ~/.ssh/eastkey.pem
+   # full name to .pem key file needs to be passed in
+   ./ec2-exp.sh launch <cluster_name> -k eastkey -i ~/.ssh/eastkey.pem -t m4.large -a ami-7c9a0115
 
    # Deploy Sparrow files, waiting 100 seconds for instances to boot before
    # attempting to contact them. It will also set the job rate to 10 jobs/s
    # on each frontend (-l 10). This will generate config files and send
    # them to all machines.
-   ./ec2-exp.sh deploy -i ~/.ssh/eastkey.pem -w 100 -l 10
+   ./ec2-exp.sh deploy sparrow -i /Users/ruby_/.ssh/eastkey.pem -n 2 -l ~/YH10.tr --cpus 1
 
    # Start Sparrow
-   ./ec2-exp.sh start -i ~/.ssh/eastkey.pem
+   ./ec2-exp.sh start-sparrow sparrow -i /Users/ruby_/.ssh/eastkey.pem
 
    # Start proto application
-   ./ec2-exp.sh start-proto -i ~/.ssh/eastkey.pem
+   ./ec2-exp.sh start-proto sparrow -i /Users/ruby_/.ssh/eastkey.pem
 
    # Stop proto application
-   ./ec2-exp.sh stop-proto -i ~/.ssh/eastkey.pem
+   ./ec2-exp.sh stop-proto sparrow -i /Users/ruby_/.ssh/eastkey.pem
 
    # Stop Sparrow
-   ./ec2-exp.sh stop -i ~/.ssh/eastkey.pem
+   ./ec2-exp.sh stop-sparrow sparrow -i /Users/ruby_/.ssh/eastkey.pem
 
 NOTE:
 Right now if you start and stop the proto application while keeping Sparrow

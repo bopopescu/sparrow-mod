@@ -127,7 +127,7 @@ public class UnconstrainedTaskPlacer implements TaskPlacer {
   public List<TTaskLaunchSpec> assignTask(THostPort nodeMonitorAddress) {
 	Integer numOutstandingReservations = outstandingReservations.get(nodeMonitorAddress);
 	if (numOutstandingReservations == null) {
-		LOG.error("Node monitor " + nodeMonitorAddress +
+		LOG.debug("Node monitor " + nodeMonitorAddress +
 		    " not in list of outstanding reservations");
 		return Lists.newArrayList();
 	}

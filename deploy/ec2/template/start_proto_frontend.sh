@@ -1,7 +1,7 @@
 #!/bin/bash
 # Start Prototype frontend
 
-LOG=/disk1/sparrow/protoFrontend.log
+LOG=protoFrontend.log
 
 APPCHK=$(ps aux | grep -v grep | grep -c {{frontend_type}})
 
@@ -10,7 +10,8 @@ if [ ! $APPCHK = '0' ]; then
   exit 1;
 fi
 
-nohup java -XX:+UseConcMarkSweepGC -verbose:gc -XX:+PrintGCTimeStamps -Xmx2046m -XX:+PrintGCDetails  -cp ./sparrow/sparrow-1.0-SNAPSHOT.jar edu.berkeley.sparrow.examples.{{frontend_type}} -c frontend.conf > $LOG 2>&1 &
+nohup java -XX:+UseConcMarkSweepGC -verbose:gc -XX:+PrintGCTimeStamps -Xmx2046m -XX:+PrintGCDetails  -cp sparrow-1.0-SNAPSHOT.jar edu.berkeley.sparrow.examples.{{frontend_type}} -c frontend.conf > $LOG 2>&1 &
+
 PID=$!
 echo "Logging to $LOG"
 sleep 1

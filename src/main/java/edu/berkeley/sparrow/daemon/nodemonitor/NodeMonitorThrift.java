@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 import java.util.List;
 
 import org.apache.commons.configuration.Configuration;
+import org.apache.log4j.Logger;
 import org.apache.thrift.TException;
 
 import com.google.common.base.Optional;
@@ -42,6 +43,8 @@ import edu.berkeley.sparrow.thrift.TFullTaskId;
  */
 public class NodeMonitorThrift implements NodeMonitorService.Iface,
                                           InternalService.Iface {
+  private final static Logger LOG = Logger.getLogger(NodeMonitorThrift.class);
+
   // Defaults if not specified by configuration
   public final static int DEFAULT_NM_THRIFT_PORT = 20501;
   public final static int DEFAULT_NM_THRIFT_THREADS = 32;

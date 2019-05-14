@@ -500,6 +500,7 @@ public class Scheduler {
             synchronized (record) {
                 if(record.allTasksCompleted()) { //If all tasks of the request completed, set status as 1 and pass the elapsed time to frontend output
                     ByteBuffer msg = ByteBuffer.allocate(8);
+                    LOG.debug("Starting Time for request: " + requestId + ": " + record.start + ", end time is: " + record.end + ". Total elapsed time is " + record.elapsed());
                     msg.putLong(record.elapsed());
                     /* Don't forget to reposition the pointer to the buffer back to write-begining */
                     msg.position(0);
