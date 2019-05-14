@@ -530,6 +530,16 @@ def start_sparrow(frontends, backends, opts):
   print "Starting sparrow on all machines..."
   ssh_all(all_machines, opts, "/root/start_sparrow.sh;")
 
+# Start all sparrow protoFrontends
+def ssh_all_protofrontends(frontends, opts):
+    commands = []
+    for fe in frontends:
+        command = "/root/start_proto_frontend.sh %s %s" % (frontends.index(fe) - 1, opts.frontends -1)
+        cmd = "ssh -t -o StrictHostKeyChecking=no -i %s root@%s '%s'" % \
+              (opts.identity_file, fe.public_dns_name, command)
+        commands.append(cmd)
+    parallel_commands(commands, 0)
+
 def stop_sparrow(frontends, backends, opts):
   all_machines = []
   for fe in frontends:
@@ -588,8 +598,10 @@ def start_proto(frontends, backends, opts):
   ssh_all([be.public_dns_name for be in backends], opts,
          "/root/start_proto_backend.sh")
   print "Starting Proto frontends..."
-  ssh_all([fe.public_dns_name for fe in frontends], opts,
-          "/root/start_proto_frontend.sh")
+  # ssh_all([fe.public_dns_name for fe in frontends], opts,
+  #         "/root/start_proto_frontend.sh")
+  print "Starting Proto frontends..."
+  ssh_all_protofrontends(frontends, opts)
 
 # Start the prototype backends/frontends
 def stop_proto(frontends, backends, opts):

@@ -10,7 +10,10 @@ if [ ! $APPCHK = '0' ]; then
   exit 1;
 fi
 
+# Wait for daemon ready
+sleep 15
 nohup java -cp sparrow-1.0-SNAPSHOT.jar edu.berkeley.sparrow.examples.SimpleBackend  > $LOG 2>&1 &
+
 PID=$!
 echo "Logging to $LOG"
 sleep 1

@@ -4,12 +4,30 @@
 LOG=protoFrontend.log
 
 APPCHK=$(ps aux | grep -v grep | grep -c {{frontend_type}})
+IP=`ifconfig eth0 | grep 'inet addr:' | cut -d: -f2 | awk '{ print $1}'`
+
+ip_there=`cat frontend.conf |grep hostname`
+if [ "X$ip_there" == "X" ]; then
+  echo "hostname = $IP" >> frontend.conf
+fi
 
 if [ ! $APPCHK = '0' ]; then
   echo "Frontend already running, cannot start it."
   exit 1;
 fi
 
+scheduler_id_there =`cat frontend.conf |grep scheduler_id`
+if [ "X$scheduler_id_there" == "X" ]; then
+  echo "scheduler_id = $1" >> frontend.conf
+fi
+
+scheduler_size_there =`cat frontend.conf |grep scheduler_size`
+if [ "X$scheduler_size_there" == "X" ]; then
+  echo "distributed_scheduler_size = $2" >> frontend.conf
+fi
+
+# Wait for daemon ready
+sleep 15
 nohup java -XX:+UseConcMarkSweepGC -verbose:gc -XX:+PrintGCTimeStamps -Xmx2046m -XX:+PrintGCDetails  -cp sparrow-1.0-SNAPSHOT.jar edu.berkeley.sparrow.examples.{{frontend_type}} -c frontend.conf > $LOG 2>&1 &
 
 PID=$!
