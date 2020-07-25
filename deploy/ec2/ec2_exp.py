@@ -49,7 +49,7 @@ def parse_args(force_action=True):
   #     help="Number of backends to launch (default: 1)")
   # parser.add_option("-w", "--wait", type="int", default=0,
   #     help="Number of seconds to wait for cluster nodes to boot (default: 0)")
-  # parser.add_option("-g", "--branch", default="master",
+  # parser.add_option("-g", "--branch", default="main",
   #     help="Which git branch to checkout")
   # parser.add_option("-s", "--spark-branch", default="sparrow",
   #     help="Which git branch to checkout (for spark)")
@@ -74,7 +74,7 @@ def parse_args(force_action=True):
   # parser.add_option("-m", "--scheduler", type="string", default="sparrow",
   #     help="Which scheduler to use for running spark (mesos/sparrow)")
   # parser.add_option("--spot-price", type="float", default=None,
-  #     help="If specified, launch slaves as spot instances with the given " +
+  #     help="If specified, launch subordinates as spot instances with the given " +
   #           "maximum price (in dollars). To see current spot prices, visit "
   #           "http://aws.amazon.com/ec2/spot-instances/#7")
   # parser.add_option("--cpus", type="int", default=1,
@@ -115,7 +115,7 @@ def parse_args(force_action=True):
                     help="Number of backends to launch (default: 1)")
   parser.add_option("-w", "--wait", type="int", default=0,
                     help="Number of seconds to wait for cluster nodes to boot (default: 0)")
-  parser.add_option("-g", "--branch", default="master",
+  parser.add_option("-g", "--branch", default="main",
                     help="Which git branch to checkout")
   parser.add_option("-d", "--log-dir", default="/tmp/",
                     help="Local directory into which log files are copied")
@@ -124,7 +124,7 @@ def parse_args(force_action=True):
   parser.add_option("-y", "--kill-delay", type="int", default=1,
                     help="Time to wait between killing backends and frontends")
   parser.add_option("--spot-price", type="float", default=None,
-                    help="If specified, launch slaves as spot instances with the given " +
+                    help="If specified, launch subordinates as spot instances with the given " +
                          "maximum price (in dollars). To see current spot prices, visit "
                          "http://aws.amazon.com/ec2/spot-instances/#7")
   parser.add_option("--cpus", type="int", default=4,
@@ -550,18 +550,18 @@ def stop_sparrow(frontends, backends, opts):
   ssh_all(all_machines, opts, "/root/stop_sparrow.sh;")
 
 def start_mesos(frontends, backends, opts):
-  print "Starting mesos master..."
-  ssh(frontends[0].public_dns_name, opts, "/root/start_mesos_master.sh;")
-  print "Starting mesos slaves..."
+  print "Starting mesos main..."
+  ssh(frontends[0].public_dns_name, opts, "/root/start_mesos_main.sh;")
+  print "Starting mesos subordinates..."
   ssh_all([be.public_dns_name for be in backends],
-           opts, "/root/start_mesos_slave.sh")
+           opts, "/root/start_mesos_subordinate.sh")
 
 def stop_mesos(frontends, backends, opts):
-  print "Stopping mesos slaves..."
+  print "Stopping mesos subordinates..."
   ssh_all([be.public_dns_name for be in backends],
-          opts, "/root/stop_mesos_slave.sh")
-  print "Stopping mesos master..."
-  ssh(frontends[0].public_dns_name, opts, "/root/stop_mesos_master.sh")
+          opts, "/root/stop_mesos_subordinate.sh")
+  print "Stopping mesos main..."
+  ssh(frontends[0].public_dns_name, opts, "/root/stop_mesos_main.sh")
 
 
 """ Starts spark backends only to allow shark shell to launch. """
